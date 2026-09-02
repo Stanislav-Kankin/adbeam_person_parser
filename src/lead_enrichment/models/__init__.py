@@ -1,3 +1,11 @@
+from lead_enrichment.models.assessment import (
+    AssessmentCompany,
+    AssessmentContact,
+    AssessmentImportResult,
+    AssessmentImportSummary,
+    AssessmentScores,
+    LeadPriority,
+)
 from lead_enrichment.models.company import CompanyFinancials, CompanyInput, EntityType
 from lead_enrichment.models.contact import (
     ChannelScope,
@@ -22,6 +30,11 @@ from lead_enrichment.models.pipeline import (
 from lead_enrichment.models.settings import HttpClientSettings, SiteCrawlSettings
 
 __all__ = [
+    "AssessmentCompany",
+    "AssessmentContact",
+    "AssessmentImportResult",
+    "AssessmentImportSummary",
+    "AssessmentScores",
     "ChannelScope",
     "ChannelType",
     "CompanyFinancials",
@@ -34,6 +47,7 @@ __all__ = [
     "HttpClientSettings",
     "KonturImportResult",
     "KonturImportSummary",
+    "LeadPriority",
     "PipelineContext",
     "PersonContact",
     "SourceKind",

@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class SourceKind(str, Enum):
+    CLIENT_ASSESSMENT = "CLIENT_ASSESSMENT"
     KONTUR_EXPORT = "KONTUR_EXPORT"
     COMPANY_SITE = "COMPANY_SITE"
     OFFICIAL_REGISTRY = "OFFICIAL_REGISTRY"

@@ -31,7 +31,18 @@ def test_contact_splitters_normalize_and_deduplicate() -> None:
     assert split_phones("+7 (999) 111-22-33\n8 999 111 22 33") == ["+79991112233"]
 
 
+def test_phone_splitter_accepts_ten_digit_regional_numbers() -> None:
+    assert split_phones(
+        "(863) 1234567, (863) 7654321",
+        allow_ten_digit=True,
+    ) == [
+        "+78631234567",
+        "+78637654321",
+    ]
+
+
 def test_url_normalization_and_ip_owner_extraction() -> None:
     assert normalize_http_url("example.ru/contacts") == "https://example.ru/contacts"
     assert normalize_http_url("javascript:alert(1)") is None
+    assert normalize_http_url("сайт не найден") is None
     assert extract_ip_owner_name("ИП Иванов Иван Иванович") == "Иванов Иван Иванович"

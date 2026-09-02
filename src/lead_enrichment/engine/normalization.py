@@ -7,6 +7,7 @@ from lead_enrichment.models.company import EntityType
 
 EMAIL_RE = re.compile(r"(?i)(?<![\w.+-])[\w.+-]+@[a-z0-9.-]+\.[a-z]{2,}(?![\w.+-])")
 PHONE_RE = re.compile(r"(?<!\d)(?:\+?7|8)[\s\-().]*(?:\d[\s\-().]*){10}(?!\d)")
+REGIONAL_PHONE_RE = re.compile(r"(?<!\d)(?:\d[\s\-().]*){10}(?!\d)")
 
 
 def normalize_identifier(value: object, valid_lengths: set[int]) -> str | None:
@@ -71,11 +72,15 @@ def split_emails(value: object) -> list[str]:
     return _unique(match.casefold() for match in EMAIL_RE.findall(str(value)))
 
 
-def split_phones(value: object) -> list[str]:
+def split_phones(value: object, *, allow_ten_digit: bool = False) -> list[str]:
     if value is None:
         return []
     normalized: list[str] = []
-    for candidate in PHONE_RE.findall(str(value)):
+    raw = str(value)
+    candidates = PHONE_RE.findall(raw)
+    if allow_ten_digit:
+        candidates.extend(REGIONAL_PHONE_RE.findall(raw))
+    for candidate in candidates:
         phone = normalize_phone_candidate(candidate)
         if phone:
             normalized.append(phone)
@@ -111,7 +116,31 @@ def normalize_http_url(value: object) -> str | None:
         return None
     if parsed.username or parsed.password:
         return None
+    if not _is_valid_hostname(parsed.hostname):
+        return None
+    try:
+        parsed.port
+    except ValueError:
+        return None
     return urlunsplit((parsed.scheme.casefold(), parsed.netloc, parsed.path, parsed.query, ""))
+
+
+def _is_valid_hostname(hostname: str) -> bool:
+    if any(char.isspace() for char in hostname):
+        return False
+    try:
+        ascii_hostname = hostname.rstrip(".").encode("idna").decode("ascii")
+    except UnicodeError:
+        return False
+    if "." not in ascii_hostname or len(ascii_hostname) > 253:
+        return False
+    return all(
+        0 < len(label) <= 63
+        and not label.startswith("-")
+        and not label.endswith("-")
+        and re.fullmatch(r"[a-z0-9-]+", label, flags=re.IGNORECASE) is not None
+        for label in ascii_hostname.split(".")
+    )
 
 
 def normalize_person_name(value: object) -> str | None:
