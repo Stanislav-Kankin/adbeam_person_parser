@@ -6,7 +6,7 @@ from urllib.parse import urlsplit, urlunsplit
 from lead_enrichment.models.company import EntityType
 
 EMAIL_RE = re.compile(r"(?i)(?<![\w.+-])[\w.+-]+@[a-z0-9.-]+\.[a-z]{2,}(?![\w.+-])")
-PHONE_RE = re.compile(r"(?:(?:\+?7|8)[\s\-().]*)?(?:\d[\s\-().]*){10}")
+PHONE_RE = re.compile(r"(?<!\d)(?:\+?7|8)[\s\-().]*(?:\d[\s\-().]*){10}(?!\d)")
 
 
 def normalize_identifier(value: object, valid_lengths: set[int]) -> str | None:
@@ -76,14 +76,23 @@ def split_phones(value: object) -> list[str]:
         return []
     normalized: list[str] = []
     for candidate in PHONE_RE.findall(str(value)):
-        digits = re.sub(r"\D", "", candidate)
-        if len(digits) == 10:
-            digits = f"7{digits}"
-        elif len(digits) == 11 and digits.startswith("8"):
-            digits = f"7{digits[1:]}"
-        if len(digits) == 11 and digits.startswith("7"):
-            normalized.append(f"+{digits}")
+        phone = normalize_phone_candidate(candidate)
+        if phone:
+            normalized.append(phone)
     return _unique(normalized)
+
+
+def normalize_phone_candidate(value: object) -> str | None:
+    if value is None:
+        return None
+    digits = re.sub(r"\D", "", str(value))
+    if len(digits) == 10:
+        digits = f"7{digits}"
+    elif len(digits) == 11 and digits.startswith("8"):
+        digits = f"7{digits[1:]}"
+    if len(digits) == 11 and digits.startswith("7"):
+        return f"+{digits}"
+    return None
 
 
 def normalize_http_url(value: object) -> str | None:

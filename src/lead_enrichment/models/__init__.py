@@ -12,7 +12,14 @@ from lead_enrichment.models.pipeline import (
     ImportIssueSeverity,
     KonturImportResult,
     KonturImportSummary,
+    PipelineContext,
+    SourceApplicability,
+    SourceMetadata,
+    SourceMetrics,
+    SourceOutcome,
+    SourceResult,
 )
+from lead_enrichment.models.settings import HttpClientSettings, SiteCrawlSettings
 
 __all__ = [
     "ChannelScope",
@@ -24,9 +31,17 @@ __all__ = [
     "EntityType",
     "ImportIssue",
     "ImportIssueSeverity",
+    "HttpClientSettings",
     "KonturImportResult",
     "KonturImportSummary",
+    "PipelineContext",
     "PersonContact",
     "SourceKind",
+    "SourceApplicability",
+    "SourceMetadata",
+    "SourceMetrics",
+    "SourceOutcome",
     "SourceReference",
+    "SourceResult",
+    "SiteCrawlSettings",
 ]

@@ -224,6 +224,8 @@ state/
 browser_profiles/
 *.settings.json
 *.local.json
+config.json
+*.env
 *.db
 *.db-*
 *.sqlite
