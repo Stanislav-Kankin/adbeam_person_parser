@@ -120,3 +120,27 @@ def test_atomic_export_keeps_existing_target_when_validation_fails(
 
     assert output.read_bytes() == original_bytes
     assert list(tmp_path.glob(".result.*.tmp.xlsx")) == []
+
+
+def test_export_supports_brand_seed_without_inn(tmp_path: Path) -> None:
+    result = _import_result()
+    brand = CompanyInput(
+        company_key="assessment:erz:123",
+        input_row_id="Ростовская область:2",
+        brand_name="ГК Тест",
+        website="https://brand.ru",
+    )
+    output = tmp_path / "brand-result.xlsx"
+
+    export_enrichment_workbook(
+        result.model_copy(update={"companies": [brand]}),
+        output,
+    )
+
+    workbook = load_workbook(output, data_only=False)
+    try:
+        assert workbook["Компании"]["B2"].value == "ГК Тест"
+        assert workbook["Компании"]["C2"].value is None
+        assert workbook["Компании"]["D2"].value == "UNKNOWN"
+    finally:
+        workbook.close()

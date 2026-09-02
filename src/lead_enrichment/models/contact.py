@@ -46,4 +46,5 @@ class PersonContact(BaseModel):
     job_title: str | None = Field(default=None, max_length=500)
     normalized_role: ContactRole = ContactRole.UNKNOWN
     confidence_score: int = Field(ge=0, le=100)
+    channels: list[ContactChannel] = Field(default_factory=list)
     source_refs: list[SourceReference] = Field(default_factory=list)

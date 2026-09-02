@@ -96,11 +96,11 @@ def _write_companies(sheet, companies: list[CompanyInput], site_results: Mapping
     ]
     sheet.append(headers)
     for company in companies:
-        site_result = site_results.get(company.inn)
+        site_result = _site_result(site_results, company)
         channels = _merged_channels(company, site_result)
         sheet.append([
             _safe_value(company.input_row_id),
-            _safe_value(company.legal_name),
+            _safe_value(_company_name(company)),
             company.inn,
             company.entity_type.value,
             "IMPORTED",
@@ -136,7 +136,7 @@ def _write_contacts(sheet, companies: list[CompanyInput], site_results: Mapping[
     ]
     sheet.append(headers)
     for company in companies:
-        site_result = site_results.get(company.inn)
+        site_result = _site_result(site_results, company)
         channels = _merged_channels(company, site_result)
         people = list(company.initial_people)
         if site_result:
@@ -144,7 +144,7 @@ def _write_contacts(sheet, companies: list[CompanyInput], site_results: Mapping[
         if not people:
             sheet.append([
                 company.inn,
-                _safe_value(company.legal_name),
+                _safe_value(_company_name(company)),
                 None,
                 None,
                 None,
@@ -161,7 +161,7 @@ def _write_contacts(sheet, companies: list[CompanyInput], site_results: Mapping[
             collected_dates = [ref.collected_at for ref in person.source_refs]
             sheet.append([
                 company.inn,
-                _safe_value(company.legal_name),
+                _safe_value(_company_name(company)),
                 _safe_value(person.full_name),
                 _safe_value(person.job_title),
                 person.normalized_role.value,
@@ -191,14 +191,14 @@ def _write_sources(sheet, companies: list[CompanyInput], site_results: Mapping[s
     seen: set[tuple[str, str, str, str | None]] = set()
     for company in companies:
         refs = list(_company_source_refs(company))
-        site_result = site_results.get(company.inn)
+        site_result = _site_result(site_results, company)
         if site_result:
             for channel in site_result.company_channels:
                 refs.extend(channel.source_refs)
             for person in site_result.person_contacts:
                 refs.extend(person.source_refs)
         for ref in refs:
-            key = (company.inn, ref.source_id, ref.locator, ref.url)
+            key = (company.company_key, ref.source_id, ref.locator, ref.url)
             if key in seen:
                 continue
             seen.add(key)
@@ -245,7 +245,7 @@ def _write_journal(sheet, companies: list[CompanyInput], site_results: Mapping[s
             0,
             0,
         ])
-        site_result = site_results.get(company.inn)
+        site_result = _site_result(site_results, company)
         if site_result:
             sheet.append([
                 company.inn,
@@ -351,6 +351,20 @@ def _validate_export_workbook(path: Path) -> None:
         validation.close()
 
 
+def _site_result(
+    site_results: Mapping[str, SourceResult],
+    company: CompanyInput,
+) -> SourceResult | None:
+    result = site_results.get(company.company_key)
+    if result is None and company.inn:
+        result = site_results.get(company.inn)
+    return result
+
+
+def _company_name(company: CompanyInput) -> str:
+    return company.brand_name or company.legal_name or company.company_key
+
+
 def _merged_channels(company: CompanyInput, site_result: SourceResult | None):
     channels = list(company.company_channels)
     if site_result:
@@ -379,6 +393,8 @@ def _company_source_refs(company: CompanyInput) -> Iterable[SourceReference]:
         yield from channel.source_refs
     for person in company.initial_people:
         yield from person.source_refs
+        for channel in person.channels:
+            yield from channel.source_refs
 
 
 def _unique(values: Iterable[str]) -> list[str]:

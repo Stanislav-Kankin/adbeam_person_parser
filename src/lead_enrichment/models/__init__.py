@@ -14,6 +14,7 @@ from lead_enrichment.models.contact import (
     ContactRole,
     PersonContact,
 )
+from lead_enrichment.models.coverage import ContactCoverage, CoverageResolutionStatus
 from lead_enrichment.models.evidence import SourceKind, SourceReference
 from lead_enrichment.models.identity import (
     AssessmentKonturMergeResult,
@@ -50,7 +51,9 @@ __all__ = [
     "CompanyFinancials",
     "CompanyInput",
     "ContactChannel",
+    "ContactCoverage",
     "ContactRole",
+    "CoverageResolutionStatus",
     "EntityType",
     "ImportIssue",
     "ImportIssueSeverity",

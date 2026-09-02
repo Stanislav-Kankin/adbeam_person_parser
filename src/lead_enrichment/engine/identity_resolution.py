@@ -42,10 +42,12 @@ def merge_assessment_with_kontur(
     domain_index: dict[str, list[CompanyInput]] = defaultdict(list)
     name_index: dict[str, list[CompanyInput]] = defaultdict(list)
     for company in kontur_result.companies:
+        if not company.inn:
+            continue
         domain = _domain(company.website)
         if domain:
             domain_index[domain].append(company)
-        normalized_name = _normalized_company_name(company.legal_name)
+        normalized_name = _normalized_company_name(company.legal_name or company.brand_name or "")
         if normalized_name:
             name_index[normalized_name].append(company)
 
@@ -146,7 +148,7 @@ def _match_by_name(brand_name: str, candidates: Iterable[CompanyInput]) -> list[
     return [
         candidate
         for candidate in candidates
-        if _normalized_company_name(candidate.legal_name) == normalized
+        if _normalized_company_name(candidate.legal_name or candidate.brand_name or "") == normalized
     ]
 
 
@@ -158,6 +160,7 @@ def _matched(
     reason_code: str,
     reason_message: str,
 ) -> IdentityResolution:
+    assert company.inn is not None
     return IdentityResolution(
         status=IdentityResolutionStatus.MATCHED,
         method=method,
@@ -189,7 +192,8 @@ def _ambiguous(
 def _unique_by_inn(companies: Iterable[CompanyInput]) -> list[CompanyInput]:
     result: dict[str, CompanyInput] = {}
     for company in companies:
-        result.setdefault(company.inn, company)
+        if company.inn:
+            result.setdefault(company.inn, company)
     return list(result.values())
 
 
