@@ -36,6 +36,12 @@ from lead_enrichment.models.pipeline import (
     SourceOutcome,
     SourceResult,
 )
+from lead_enrichment.models.run import (
+    BatchEnrichmentResult,
+    BatchEnrichmentSummary,
+    EnrichedLeadResult,
+    PipelineStepRecord,
+)
 from lead_enrichment.models.settings import HttpClientSettings, SiteCrawlSettings
 
 __all__ = [
@@ -46,6 +52,8 @@ __all__ = [
     "AssessmentKonturMergeResult",
     "AssessmentKonturMergeSummary",
     "AssessmentScores",
+    "BatchEnrichmentResult",
+    "BatchEnrichmentSummary",
     "ChannelScope",
     "ChannelType",
     "CompanyFinancials",
@@ -55,6 +63,7 @@ __all__ = [
     "ContactRole",
     "CoverageResolutionStatus",
     "EntityType",
+    "EnrichedLeadResult",
     "ImportIssue",
     "ImportIssueSeverity",
     "HttpClientSettings",
@@ -66,6 +75,7 @@ __all__ = [
     "LeadPriority",
     "MergedLead",
     "PipelineContext",
+    "PipelineStepRecord",
     "PersonContact",
     "SourceKind",
     "SourceApplicability",

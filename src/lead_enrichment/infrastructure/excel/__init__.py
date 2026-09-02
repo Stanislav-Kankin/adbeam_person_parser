@@ -3,6 +3,7 @@ from lead_enrichment.infrastructure.excel.assessment_reader import (
     MissingAssessmentColumnsError,
     read_assessment_workbook,
 )
+from lead_enrichment.infrastructure.excel.batch_writer import export_batch_enrichment_workbook
 from lead_enrichment.infrastructure.excel.kontur_reader import (
     KonturWorkbookError,
     MissingRequiredColumnsError,
@@ -19,6 +20,7 @@ __all__ = [
     "MissingRequiredColumnsError",
     "MissingAssessmentColumnsError",
     "export_enrichment_workbook",
+    "export_batch_enrichment_workbook",
     "read_kontur_workbook",
     "read_assessment_workbook",
     "sanitize_excel_text",

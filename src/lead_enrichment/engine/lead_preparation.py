@@ -16,6 +16,7 @@ from lead_enrichment.models import (
     MergedLead,
     PersonContact,
     SourceReference,
+    SourceResult,
 )
 
 ASSESSMENT_CONTACT_NAMESPACE = UUID("5f90bc07-9eb0-4dd2-acf7-9b5ec7baec67")
@@ -122,6 +123,19 @@ def evaluate_contact_coverage(
         has_qualified_target_person=bool(qualified_people),
         has_personal_direct_channel=personal_direct,
         has_company_direct_channel=company_direct,
+    )
+
+
+def apply_source_result(company: CompanyInput, result: SourceResult) -> CompanyInput:
+    return company.model_copy(
+        update={
+            "company_channels": _merge_channels(
+                [*company.company_channels, *result.company_channels]
+            ),
+            "initial_people": _merge_people(
+                [*company.initial_people, *result.person_contacts]
+            ),
+        }
     )
 
 
