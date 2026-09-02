@@ -15,6 +15,14 @@ from lead_enrichment.models.contact import (
     PersonContact,
 )
 from lead_enrichment.models.evidence import SourceKind, SourceReference
+from lead_enrichment.models.identity import (
+    AssessmentKonturMergeResult,
+    AssessmentKonturMergeSummary,
+    IdentityMatchMethod,
+    IdentityResolution,
+    IdentityResolutionStatus,
+    MergedLead,
+)
 from lead_enrichment.models.pipeline import (
     ImportIssue,
     ImportIssueSeverity,
@@ -34,6 +42,8 @@ __all__ = [
     "AssessmentContact",
     "AssessmentImportResult",
     "AssessmentImportSummary",
+    "AssessmentKonturMergeResult",
+    "AssessmentKonturMergeSummary",
     "AssessmentScores",
     "ChannelScope",
     "ChannelType",
@@ -45,9 +55,13 @@ __all__ = [
     "ImportIssue",
     "ImportIssueSeverity",
     "HttpClientSettings",
+    "IdentityMatchMethod",
+    "IdentityResolution",
+    "IdentityResolutionStatus",
     "KonturImportResult",
     "KonturImportSummary",
     "LeadPriority",
+    "MergedLead",
     "PipelineContext",
     "PersonContact",
     "SourceKind",
