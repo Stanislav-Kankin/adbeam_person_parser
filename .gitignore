@@ -216,3 +216,25 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# AdBeam Person Parser: customer data and local state
+output/
+artifacts/
+state/
+browser_profiles/
+*.settings.json
+*.local.json
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.xlsx
+*.xls
+*.xlsm
+*.csv
+*.tsv
+
+# AdBeam Person Parser: build outputs
+build/
+dist/
+*.spec
