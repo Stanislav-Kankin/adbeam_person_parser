@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 from lead_enrichment.engine import EnrichmentOrchestrator, merge_assessment_with_kontur
@@ -165,7 +166,5 @@ def _status(callback: StatusCallback | None, message: str) -> None:
         callback(message)
 
 
-def _utc_now():
-    from datetime import datetime, timezone
-
+def _utc_now() -> datetime:
     return datetime.now(timezone.utc)

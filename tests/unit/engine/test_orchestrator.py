@@ -139,3 +139,22 @@ def test_orchestrator_converts_plugin_exception_to_safe_failure() -> None:
     assert source_result.outcome == SourceOutcome.FAILED
     assert source_result.reason_code == "PLUGIN_EXECUTION_FAILED"
     assert "secret" not in source_result.reason_message
+
+
+def test_orchestrator_stops_between_companies_when_cancelled() -> None:
+    cancelled = False
+
+    def progress(_done: int, _total: int) -> None:
+        nonlocal cancelled
+        cancelled = True
+
+    result = EnrichmentOrchestrator([_PersonalContactPlugin()]).run(
+        [_lead(), _lead()],
+        run_id="run-cancel",
+        collected_at=NOW,
+        progress_callback=progress,
+        should_cancel=lambda: cancelled,
+    )
+
+    assert result.cancelled
+    assert result.summary.total_companies == 1
