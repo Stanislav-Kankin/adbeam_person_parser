@@ -64,6 +64,7 @@ def run_kontur_pipeline(
     if not imported.companies:
         raise ValueError("В выгрузке Контур нет строк с валидным ИНН")
 
+    _status(status_callback, "Подготавливаю компании и идентифицирую их по ИНН")
     leads = create_inn_leads(imported)
     registry = CheckpointRegistry(request.checkpoint_file)
     _status(status_callback, "Запускаю поиск контактов на официальных сайтах")
