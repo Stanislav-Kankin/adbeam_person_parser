@@ -26,6 +26,10 @@ DIRECT_CHANNEL_TYPES = {ChannelType.EMAIL, ChannelType.PHONE}
 
 def prepare_pipeline_company(lead: MergedLead) -> CompanyInput:
     assessment = lead.assessment
+    if assessment is None:
+        if lead.kontur_company is None or not lead.kontur_company.inn:
+            raise ValueError("INN-first pipeline requires a Kontur company with INN")
+        return lead.kontur_company
     assessment_people = [
         _assessment_person(lead.company_key, contact) for contact in assessment.contacts
     ]

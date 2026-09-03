@@ -81,6 +81,30 @@ def merge_assessment_with_kontur(
     )
 
 
+def create_inn_leads(kontur_result: KonturImportResult) -> list[MergedLead]:
+    """Create pipeline inputs whose identity is anchored only by a verified INN."""
+    leads: list[MergedLead] = []
+    for company in kontur_result.companies:
+        if not company.inn:
+            raise ValueError("Контур pipeline принимает только компании с валидным ИНН")
+        leads.append(
+            MergedLead(
+                company_key=f"inn:{company.inn}",
+                kontur_company=company,
+                identity=IdentityResolution(
+                    status=IdentityResolutionStatus.MATCHED,
+                    method=IdentityMatchMethod.INN,
+                    confidence_score=100,
+                    reason_code="VERIFIED_INPUT_INN",
+                    reason_message="Компания идентифицирована по ИНН из выгрузки Контур",
+                    matched_inn=company.inn,
+                    candidate_inns=[company.inn],
+                ),
+            )
+        )
+    return leads
+
+
 def _resolve_company(
     assessment: AssessmentCompany,
     domain_index: dict[str, list[CompanyInput]],

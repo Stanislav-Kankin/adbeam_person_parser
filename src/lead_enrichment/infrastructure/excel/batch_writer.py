@@ -109,16 +109,16 @@ def _write_summary(sheet, result: BatchEnrichmentResult, company_rows: int, jour
 def _write_companies(sheet, leads: list[EnrichedLeadResult]) -> None:
     headers = [
         "Company key",
-        "Бренд",
-        "Юрлицо",
+        "Наименование",
         "ИНН",
+        "КПП",
+        "ОГРН / ОГРНИП",
+        "Тип",
         "Регион",
         "Сайт",
-        "TIR",
-        "Итоговый балл",
-        "Identity status",
-        "Метод сопоставления",
-        "Уверенность identity",
+        "Сегмент",
+        "Основной вид деятельности",
+        "Статус организации",
         "Coverage status",
         "Причина coverage",
         "Email компании",
@@ -126,27 +126,25 @@ def _write_companies(sheet, leads: list[EnrichedLeadResult]) -> None:
         "Соцсети компании",
         "ЛПР найдено",
         "Недостающие роли",
-        "Совпадение Indigo",
-        "Stage 1",
-        "Следующее действие",
-        "Зацепка",
+        "Identity status",
+        "Метод сопоставления",
+        "Уверенность identity",
     ]
     sheet.append(headers)
     for item in leads:
         company = item.company
-        assessment = item.lead.assessment
         sheet.append([
             _safe_value(company.company_key),
-            _safe_value(assessment.brand_name),
-            _safe_value(company.legal_name),
+            _safe_value(_company_name(company)),
             company.inn,
+            company.kpp,
+            company.ogrn,
+            company.entity_type.value,
             _safe_value(company.region),
             _safe_value(company.website),
-            assessment.lead_priority.value,
-            assessment.scores.total,
-            item.lead.identity.status.value,
-            item.lead.identity.method.value,
-            item.lead.identity.confidence_score,
+            _safe_value(company.segment_name),
+            _safe_value(company.primary_activity),
+            _safe_value(company.operating_status),
             item.coverage.status.value,
             _safe_value(item.coverage.reason_message),
             _safe_value(_channel_values(company.company_channels, ChannelType.EMAIL)),
@@ -154,19 +152,18 @@ def _write_companies(sheet, leads: list[EnrichedLeadResult]) -> None:
             _safe_value(_channel_values(company.company_channels, ChannelType.SOCIAL)),
             len(company.initial_people),
             "; ".join(role.value for role in item.coverage.missing_roles),
-            _safe_value(assessment.indigo_match_status),
-            _safe_value(assessment.stage1_status),
-            _safe_value(assessment.next_action),
-            _safe_value(assessment.outreach_hook),
+            item.lead.identity.status.value,
+            item.lead.identity.method.value,
+            item.lead.identity.confidence_score,
         ])
-        _set_hyperlink(sheet.cell(row=sheet.max_row, column=6), company.website)
-    _format_table(sheet, widths=[34, 32, 36, 15, 24, 34, 10, 14, 18, 22, 16, 18, 44, 36, 34, 34, 12, 28, 22, 14, 34, 54])
+        _set_hyperlink(sheet.cell(row=sheet.max_row, column=8), company.website)
+    _format_table(sheet, widths=[34, 42, 15, 12, 18, 22, 24, 36, 28, 46, 22, 18, 46, 38, 34, 36, 12, 28, 18, 20, 16])
 
 
 def _write_contacts(sheet, leads: list[EnrichedLeadResult]) -> None:
     headers = [
         "Company key",
-        "Бренд",
+        "Наименование",
         "ИНН",
         "ФИО",
         "Должность",
@@ -186,7 +183,7 @@ def _write_contacts(sheet, leads: list[EnrichedLeadResult]) -> None:
             )
             sheet.append([
                 _safe_value(item.company.company_key),
-                _safe_value(item.lead.assessment.brand_name),
+                _safe_value(_company_name(item.company)),
                 item.company.inn,
                 _safe_value(person.full_name),
                 _safe_value(person.job_title),
@@ -258,47 +255,83 @@ def _write_journal(sheet, leads: list[EnrichedLeadResult]) -> None:
 
 def _write_manual_queue(sheet, leads: list[EnrichedLeadResult]) -> None:
     headers = [
-        "TIR",
-        "Бренд",
+        "Наименование",
         "ИНН",
         "Причина",
         "Недостающие роли",
-        "Совпадение Indigo",
         "Поисковая ссылка",
     ]
     sheet.append(headers)
     for item in leads:
         for url in item.manual_search_urls:
-            assessment = item.lead.assessment
             sheet.append([
-                assessment.lead_priority.value,
-                _safe_value(assessment.brand_name),
+                _safe_value(_company_name(item.company)),
                 item.company.inn,
                 _safe_value(item.coverage.reason_message),
                 "; ".join(role.value for role in item.coverage.missing_roles),
-                _safe_value(assessment.indigo_match_status),
                 url,
             ])
-            _set_hyperlink(sheet.cell(row=sheet.max_row, column=7), url)
-    _format_table(sheet, widths=[10, 32, 15, 50, 28, 22, 70])
+            _set_hyperlink(sheet.cell(row=sheet.max_row, column=5), url)
+    _format_table(sheet, widths=[42, 15, 50, 28, 70])
 
 
 def _write_source_data(sheet, leads: list[EnrichedLeadResult]) -> None:
-    source_headers: list[str] = []
-    seen: set[str] = set()
+    sheet.append([
+        "Company key",
+        "Строка источника",
+        "Наименование",
+        "ИНН",
+        "КПП",
+        "ОГРН / ОГРНИП",
+        "Тип",
+        "Регион",
+        "Адрес",
+        "Статус организации",
+        "Реестр МСП",
+        "Карточка в Фокусе",
+        "Сайт",
+        "Основной вид деятельности",
+        "Количество сотрудников",
+        "Количество филиалов",
+        "Источник",
+        "Сегмент",
+        "Email компании",
+        "Телефоны компании",
+    ])
     for item in leads:
-        for header in item.lead.assessment.source_fields:
-            if header not in seen:
-                seen.add(header)
-                source_headers.append(header)
-    sheet.append(["Company key", *source_headers])
-    for item in leads:
-        fields = item.lead.assessment.source_fields
+        company = item.lead.kontur_company or item.company
         sheet.append([
-            _safe_value(item.company.company_key),
-            *(_safe_value(fields.get(header)) for header in source_headers),
+            _safe_value(company.company_key),
+            _safe_value(company.input_row_id),
+            _safe_value(_company_name(company)),
+            company.inn,
+            company.kpp,
+            company.ogrn,
+            company.entity_type.value,
+            _safe_value(company.region),
+            _safe_value(company.address),
+            _safe_value(company.operating_status),
+            _safe_value(company.msp_category),
+            _safe_value(company.focus_url),
+            _safe_value(company.website),
+            _safe_value(company.primary_activity),
+            company.employee_count,
+            company.branch_count,
+            _safe_value(company.source_label),
+            _safe_value(company.segment_name),
+            _safe_value(_channel_values(company.company_channels, ChannelType.EMAIL)),
+            _safe_value(_channel_values(company.company_channels, ChannelType.PHONE)),
         ])
-    _format_table(sheet, widths=[34, *([24] * len(source_headers))])
+        _set_hyperlink(sheet.cell(row=sheet.max_row, column=12), company.focus_url)
+        _set_hyperlink(sheet.cell(row=sheet.max_row, column=13), company.website)
+    _format_table(
+        sheet,
+        widths=[34, 22, 42, 15, 12, 18, 22, 24, 48, 22, 20, 40, 36, 50, 18, 18, 26, 28, 38, 34],
+    )
+
+
+def _company_name(company) -> str:
+    return company.brand_name or company.legal_name or company.company_key
 
 
 def _company_refs(item: EnrichedLeadResult) -> list[SourceReference]:

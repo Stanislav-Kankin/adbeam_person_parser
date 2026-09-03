@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from lead_enrichment.models.assessment import AssessmentCompany
 from lead_enrichment.models.company import CompanyInput
@@ -15,6 +15,7 @@ class IdentityResolutionStatus(str, Enum):
 
 
 class IdentityMatchMethod(str, Enum):
+    INN = "INN"
     DOMAIN = "DOMAIN"
     DOMAIN_AND_NAME = "DOMAIN_AND_NAME"
     NORMALIZED_NAME = "NORMALIZED_NAME"
@@ -37,9 +38,15 @@ class MergedLead(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     company_key: str = Field(min_length=1, max_length=500)
-    assessment: AssessmentCompany
+    assessment: AssessmentCompany | None = None
     kontur_company: CompanyInput | None = None
     identity: IdentityResolution
+
+    @model_validator(mode="after")
+    def require_input_company(self) -> MergedLead:
+        if self.assessment is None and self.kontur_company is None:
+            raise ValueError("assessment or kontur_company is required")
+        return self
 
 
 class AssessmentKonturMergeSummary(BaseModel):

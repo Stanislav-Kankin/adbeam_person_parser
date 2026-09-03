@@ -4,11 +4,10 @@ from uuid import uuid4
 
 from openpyxl import Workbook, load_workbook
 
-from lead_enrichment.engine import EnrichmentOrchestrator, merge_assessment_with_kontur
+from lead_enrichment.engine import EnrichmentOrchestrator, create_inn_leads
 from lead_enrichment.infrastructure import CheckpointRegistry
 from lead_enrichment.infrastructure.excel import (
     export_batch_enrichment_workbook,
-    read_assessment_workbook,
     read_kontur_workbook,
 )
 from lead_enrichment.models import (
@@ -43,7 +42,7 @@ class _SyntheticPersonSource:
         )
 
     def execute(self, context) -> SourceResult:
-        if context.company.brand_name != "Альфа":
+        if "Альфа" not in (context.company.legal_name or ""):
             return SourceResult(
                 source_id="synthetic_people",
                 source_version="1.0.0",
@@ -76,28 +75,6 @@ class _SyntheticPersonSource:
         )
 
 
-def _assessment_file(path: Path) -> None:
-    workbook = Workbook()
-    main = workbook.active
-    main.title = "Ростовская область"
-    main.append([
-        "Застройщик / бренд",
-        "Регион",
-        "ID ЕРЗ",
-        "Сайт компании / проекта",
-        "TIR",
-        "Итоговый балл",
-    ])
-    main.append(["Альфа", "Ростовская область", "1", "alpha.ru", "TIR 1", 80])
-    main.append(["Бета", "Ростовская область", "2", "beta.ru", "TIR 2", 60])
-    lpr = workbook.create_sheet("ЛПР 2026 verified")
-    lpr.append(["Строка", "Компания", "Основной актуальный ЛПР", "Роль"])
-    lpr.append([2, "Альфа", None, None])
-    lpr.append([3, "Бета", None, None])
-    workbook.save(path)
-    workbook.close()
-
-
 def _kontur_file(path: Path) -> None:
     workbook = Workbook()
     sheet = workbook.active
@@ -109,20 +86,17 @@ def _kontur_file(path: Path) -> None:
     workbook.close()
 
 
-def test_full_assessment_merge_orchestrator_and_export(tmp_path: Path) -> None:
-    assessment_path = tmp_path / "assessment.xlsx"
+def test_full_kontur_orchestrator_and_export(tmp_path: Path) -> None:
     kontur_path = tmp_path / "kontur.xlsx"
     output_path = tmp_path / "result.xlsx"
-    _assessment_file(assessment_path)
     _kontur_file(kontur_path)
 
-    assessment = read_assessment_workbook(assessment_path, collected_at=NOW)
     kontur = read_kontur_workbook(kontur_path, collected_at=NOW)
-    merge = merge_assessment_with_kontur(assessment, kontur)
+    leads = create_inn_leads(kontur)
     batch = EnrichmentOrchestrator(
         [_SyntheticPersonSource()],
         checkpoint_registry=CheckpointRegistry(tmp_path / "state.sqlite3"),
-    ).run(merge.leads, run_id="integration-run", collected_at=NOW)
+    ).run(leads, run_id="integration-run", collected_at=NOW)
 
     export_batch_enrichment_workbook(batch, output_path)
 

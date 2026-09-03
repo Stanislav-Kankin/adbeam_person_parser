@@ -9,8 +9,8 @@ from tkinter import Tk
 
 from lead_enrichment.application import (
     PipelineRunRequest,
-    inspect_inputs,
-    run_assessment_pipeline,
+    inspect_kontur_input,
+    run_kontur_pipeline,
 )
 from lead_enrichment.gui.main_view import MainView
 
@@ -32,15 +32,14 @@ class AppController:
         root.after(100, self._drain_events)
 
     def inspect(self) -> None:
-        assessment = self._assessment_path()
-        if assessment is None:
+        kontur = self._kontur_path()
+        if kontur is None:
             return
-        kontur = self._optional_path(self._view.kontur_path.get())
-        self._start_worker(self._inspect_worker, assessment, kontur)
+        self._start_worker(self._inspect_worker, kontur)
 
     def start(self) -> None:
-        assessment = self._assessment_path()
-        if assessment is None:
+        kontur = self._kontur_path()
+        if kontur is None:
             return
         output_raw = self._view.output_path.get().strip()
         if not output_raw:
@@ -51,8 +50,7 @@ class AppController:
             self._view.show_error("Выберите хотя бы одну целевую роль")
             return
         request = PipelineRunRequest(
-            assessment_file=assessment,
-            kontur_file=self._optional_path(self._view.kontur_path.get()),
+            kontur_file=kontur,
             output_file=Path(output_raw),
             checkpoint_file=_default_checkpoint_path(),
             target_roles=roles,
@@ -84,21 +82,16 @@ class AppController:
             return
         self._root.after(100, self._wait_before_close)
 
-    def _assessment_path(self) -> Path | None:
-        raw = self._view.assessment_path.get().strip()
+    def _kontur_path(self) -> Path | None:
+        raw = self._view.kontur_path.get().strip()
         if not raw:
-            self._view.show_error("Выберите файл assessment")
+            self._view.show_error("Выберите выгрузку Контур")
             return None
         path = Path(raw)
         if not path.is_file():
-            self._view.show_error("Файл assessment не найден")
+            self._view.show_error("Файл выгрузки Контур не найден")
             return None
         return path
-
-    @staticmethod
-    def _optional_path(value: str) -> Path | None:
-        stripped = value.strip()
-        return Path(stripped) if stripped else None
 
     def _start_worker(self, target, *args) -> None:
         if self._worker and self._worker.is_alive():
@@ -107,15 +100,15 @@ class AppController:
         self._worker = threading.Thread(target=target, args=args, daemon=True)
         self._worker.start()
 
-    def _inspect_worker(self, assessment: Path, kontur: Path | None) -> None:
+    def _inspect_worker(self, kontur: Path) -> None:
         try:
-            result = inspect_inputs(assessment, kontur)
-            tiers = ", ".join(f"{key}: {value}" for key, value in result.tier_counts.items())
+            result = inspect_kontur_input(kontur)
             message = (
-                f"Assessment: {result.assessment_rows}; сайты: {result.rows_with_website}; "
-                f"ЛПР: {result.primary_contacts}+{result.alternative_contacts}; {tiers}. "
-                f"Контур: {result.kontur_rows}; matched: {result.matched_rows}; "
-                f"ambiguous: {result.ambiguous_rows}; not found: {result.not_found_rows}."
+                f"Строк: {result.total_rows}; принято по ИНН: {result.imported_companies}; "
+                f"пропущено: {result.skipped_rows}; невалидных ИНН: {result.invalid_inn_rows}; "
+                f"дубликатов ИНН: {result.duplicate_inn_rows}; сайты: {result.rows_with_website}; "
+                f"руководители: {result.rows_with_manager}; email: {result.rows_with_emails}; "
+                f"телефоны: {result.rows_with_phones}."
             )
             self._events.put(("inspection", message))
         except Exception as error:
@@ -125,7 +118,7 @@ class AppController:
 
     def _run_worker(self, request: PipelineRunRequest) -> None:
         try:
-            result = run_assessment_pipeline(
+            result = run_kontur_pipeline(
                 request,
                 status_callback=lambda value: self._events.put(("status", value)),
                 progress_callback=lambda done, total: self._events.put(

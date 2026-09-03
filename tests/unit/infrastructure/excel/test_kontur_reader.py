@@ -142,3 +142,23 @@ def test_reader_requires_name_and_inn_columns(tmp_path: Path) -> None:
         read_kontur_workbook(path)
 
     assert error.value.missing_columns == ["ИНН"]
+
+
+def test_reader_keeps_only_first_row_for_duplicate_inn(tmp_path: Path) -> None:
+    path = tmp_path / "duplicates.xlsx"
+    _save_workbook(
+        path,
+        [
+            ['ООО "Первая"', "1234567894"],
+            ['ООО "Повтор"', "1234567894"],
+        ],
+        headers=["Наименование", "ИНН"],
+    )
+
+    result = read_kontur_workbook(path)
+
+    assert result.summary.imported_rows == 1
+    assert result.summary.skipped_rows == 1
+    assert result.summary.duplicate_inn_rows == 1
+    assert result.companies[0].legal_name == 'ООО "Первая"'
+    assert result.summary.issues[0].code == "DUPLICATE_INN"

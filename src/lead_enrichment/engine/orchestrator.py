@@ -17,6 +17,7 @@ from lead_enrichment.infrastructure.checkpoint import CheckpointRegistry
 from lead_enrichment.models import (
     BatchEnrichmentResult,
     BatchEnrichmentSummary,
+    CompanyInput,
     ContactCoverage,
     ContactRole,
     CoverageResolutionStatus,
@@ -130,7 +131,7 @@ class EnrichmentOrchestrator:
             manual_urls = (
                 []
                 if coverage.status == CoverageResolutionStatus.RESOLVED
-                else _manual_search_urls(lead, coverage.missing_roles or targets)
+                else _manual_search_urls(company, coverage.missing_roles or targets)
             )
             results.append(
                 EnrichedLeadResult(
@@ -183,7 +184,11 @@ class EnrichmentOrchestrator:
                     ),
                 }
             )
-        indigo_status = (lead.assessment.indigo_match_status or "").casefold()
+        indigo_status = (
+            (lead.assessment.indigo_match_status or "").casefold()
+            if lead.assessment is not None
+            else ""
+        )
         if indigo_status and indigo_status != "no_match":
             return coverage.model_copy(
                 update={
@@ -282,7 +287,7 @@ def _config_hash(target_roles: list[ContactRole], minimum_confidence: int) -> st
 
 
 def _manual_search_urls(
-    lead: MergedLead,
+    company: CompanyInput,
     roles: Iterable[ContactRole],
 ) -> list[str]:
     role_labels = {
@@ -293,10 +298,10 @@ def _manual_search_urls(
         ContactRole.PROCUREMENT: "директор по закупкам",
         ContactRole.UNKNOWN: "руководитель",
     }
-    company = lead.assessment.brand_name
+    company_name = company.brand_name or company.legal_name or company.inn
     urls: list[str] = []
     for role in dict.fromkeys(roles):
-        query = f'"{company}" {role_labels[role]}'
+        query = f'"{company_name}" {role_labels[role]}'
         urls.append(f"https://yandex.ru/search/?{urlencode({'text': query})}")
         urls.append(f"https://www.google.com/search?{urlencode({'q': query})}")
     return urls

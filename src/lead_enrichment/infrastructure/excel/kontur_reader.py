@@ -138,10 +138,11 @@ def read_kontur_workbook(
                     ImportIssue(
                         row_index=row_index,
                         code="DUPLICATE_INN",
-                        message="ИНН уже встречался в этой выгрузке; строка сохранена для последующего merge",
+                        message="ИНН уже встречался в этой выгрузке; повторная строка пропущена",
                         severity=ImportIssueSeverity.WARNING,
                     )
                 )
+                continue
             seen_inn.add(inn)
 
             entity_type = infer_entity_type(inn)

@@ -11,12 +11,11 @@ from lead_enrichment.models import ContactRole
 class MainView:
     def __init__(self, root: Tk) -> None:
         self.root = root
-        self.assessment_path = StringVar()
         self.kontur_path = StringVar()
         self.output_path = StringVar()
         self.marketing_enabled = StringVar(value="1")
         self.sales_enabled = StringVar(value="1")
-        self.status_text = StringVar(value="Выберите клиентский assessment")
+        self.status_text = StringVar(value="Выберите выгрузку Контур с ИНН")
         self.progress_text = StringVar(value="0 / 0")
         self._build()
 
@@ -90,15 +89,14 @@ class MainView:
         ).grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 4))
         ttk.Label(
             container,
-            text="Assessment → Контур → официальный сайт → Excel-результат",
+            text="Контур с ИНН → официальный сайт → Excel-результат",
         ).grid(row=1, column=0, columnspan=3, sticky="w", pady=(0, 16))
 
-        self._file_row(container, 2, "Assessment", self.assessment_path, self._choose_assessment)
-        self._file_row(container, 3, "Контур (необязательно)", self.kontur_path, self._choose_kontur)
-        self._file_row(container, 4, "Итоговый Excel", self.output_path, self._choose_output)
+        self._file_row(container, 2, "Выгрузка Контур", self.kontur_path, self._choose_kontur)
+        self._file_row(container, 3, "Итоговый Excel", self.output_path, self._choose_output)
 
         roles = ttk.LabelFrame(container, text="Целевые роли", padding=10)
-        roles.grid(row=5, column=0, columnspan=3, sticky="ew", pady=(12, 10))
+        roles.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(12, 10))
         ttk.Checkbutton(
             roles,
             text="Маркетинг",
@@ -115,7 +113,7 @@ class MainView:
         ).pack(side="left")
 
         actions = ttk.Frame(container)
-        actions.grid(row=6, column=0, columnspan=3, sticky="ew", pady=(0, 10))
+        actions.grid(row=5, column=0, columnspan=3, sticky="ew", pady=(0, 10))
         self.inspect_button = ttk.Button(actions, text="Проверить вход")
         self.inspect_button.pack(side="left")
         self.start_button = ttk.Button(actions, text="Запустить", style="Accent.TButton")
@@ -124,7 +122,7 @@ class MainView:
         self.cancel_button.pack(side="left")
 
         progress_frame = ttk.Frame(container)
-        progress_frame.grid(row=7, column=0, columnspan=3, sticky="ew", pady=(0, 10))
+        progress_frame.grid(row=6, column=0, columnspan=3, sticky="ew", pady=(0, 10))
         progress_frame.columnconfigure(0, weight=1)
         self.progress = ttk.Progressbar(progress_frame, mode="determinate")
         self.progress.grid(row=0, column=0, sticky="ew")
@@ -132,7 +130,7 @@ class MainView:
             row=0, column=1, padx=(10, 0)
         )
         ttk.Label(container, textvariable=self.status_text).grid(
-            row=8, column=0, columnspan=3, sticky="w"
+            row=7, column=0, columnspan=3, sticky="w"
         )
 
         self.log = Text(
@@ -142,8 +140,8 @@ class MainView:
             state="disabled",
             font=("Consolas", 10),
         )
-        self.log.grid(row=9, column=0, columnspan=3, sticky="nsew", pady=(10, 0))
-        container.rowconfigure(9, weight=1)
+        self.log.grid(row=8, column=0, columnspan=3, sticky="nsew", pady=(10, 0))
+        container.rowconfigure(8, weight=1)
 
     def _file_row(
         self,
@@ -161,27 +159,18 @@ class MainView:
             row=row, column=2, sticky="e", pady=4
         )
 
-    def _choose_assessment(self) -> None:
-        value = filedialog.askopenfilename(
-            title="Выберите assessment",
-            filetypes=[("Excel", "*.xlsx *.xlsm")],
-            parent=self.root,
-        )
-        if not value:
-            return
-        self.assessment_path.set(value)
-        if not self.output_path.get().strip():
-            source = Path(value)
-            self.output_path.set(str(source.with_name(f"{source.stem}_parsed.xlsx")))
-
     def _choose_kontur(self) -> None:
         value = filedialog.askopenfilename(
             title="Выберите выгрузку Контур",
             filetypes=[("Excel", "*.xlsx *.xlsm")],
             parent=self.root,
         )
-        if value:
-            self.kontur_path.set(value)
+        if not value:
+            return
+        self.kontur_path.set(value)
+        if not self.output_path.get().strip():
+            source = Path(value)
+            self.output_path.set(str(source.with_name(f"{source.stem}_parsed.xlsx")))
 
     def _choose_output(self) -> None:
         value = filedialog.asksaveasfilename(
