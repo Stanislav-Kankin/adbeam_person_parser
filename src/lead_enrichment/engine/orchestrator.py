@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from collections import Counter
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from datetime import datetime
 from urllib.parse import urlencode
 
@@ -50,6 +50,8 @@ class EnrichmentOrchestrator:
         collected_at: datetime,
         target_roles: Iterable[ContactRole] = DEFAULT_TARGET_ROLES,
         config_hash: str | None = None,
+        progress_callback: Callable[[int, int], None] | None = None,
+        should_cancel: Callable[[], bool] | None = None,
     ) -> BatchEnrichmentResult:
         if collected_at.tzinfo is None or collected_at.utcoffset() is None:
             raise ValueError("collected_at must be timezone-aware")
@@ -58,11 +60,16 @@ class EnrichmentOrchestrator:
             targets,
             self._minimum_confidence,
         )
+        lead_list = list(leads)
         results: list[EnrichedLeadResult] = []
         checkpoint_hits = 0
         source_executions = 0
+        cancelled = False
 
-        for lead in leads:
+        for lead in lead_list:
+            if should_cancel is not None and should_cancel():
+                cancelled = True
+                break
             company = prepare_pipeline_company(lead)
             coverage = self._coverage(company, lead, targets)
             source_results: list[SourceResult] = []
@@ -135,11 +142,14 @@ class EnrichmentOrchestrator:
                     manual_search_urls=manual_urls,
                 )
             )
+            if progress_callback is not None:
+                progress_callback(len(results), len(lead_list))
 
         status_counts = Counter(result.coverage.status for result in results)
         return BatchEnrichmentResult(
             run_id=run_id,
             target_roles=targets,
+            cancelled=cancelled,
             summary=BatchEnrichmentSummary(
                 total_companies=len(results),
                 resolved=status_counts[CoverageResolutionStatus.RESOLVED],

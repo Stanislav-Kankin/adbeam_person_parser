@@ -49,5 +49,6 @@ class BatchEnrichmentResult(BaseModel):
 
     run_id: str = Field(min_length=1, max_length=200)
     target_roles: list[ContactRole] = Field(default_factory=list)
+    cancelled: bool = False
     summary: BatchEnrichmentSummary
     leads: list[EnrichedLeadResult] = Field(default_factory=list)
